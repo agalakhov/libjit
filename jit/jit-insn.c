@@ -288,6 +288,15 @@ static jit_value_t apply_unary
 	{
 		return 0;
 	}
+	if(value1->is_constant &&
+	   !jit_context_get_meta_numeric(func->context, JIT_OPTION_DONT_FOLD))
+	{
+		dest = _jit_opcode_apply(func, (short)oper, result_type, value1, 0);
+		if (dest)
+		{
+			return dest;
+		}
+	}
 	insn = _jit_block_add_insn(func->builder->current_block);
 	if(!insn)
 	{
@@ -321,6 +330,15 @@ static jit_value_t apply_binary
 	if(!_jit_function_ensure_builder(func))
 	{
 		return 0;
+	}
+	if(value1->is_constant && value2->is_constant &&
+	   !jit_context_get_meta_numeric(func->context, JIT_OPTION_DONT_FOLD))
+	{
+		dest = _jit_opcode_apply(func, (short)oper, result_type, value1, value2);
+		if (dest)
+		{
+			return dest;
+		}
 	}
 	insn = _jit_block_add_insn(func->builder->current_block);
 	if(!insn)
