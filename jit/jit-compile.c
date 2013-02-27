@@ -1021,7 +1021,7 @@ _jit_function_compile_on_demand(jit_function_t func)
 
 unsigned long
 _jit_function_get_bytecode(jit_function_t func,
-			   void *func_info, void *pc, int exact)
+			   jit_function_info_t func_info, void *pc, int exact)
 {
 	unsigned long offset = JIT_CACHE_NO_OFFSET;
 	void *start;

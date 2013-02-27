@@ -397,7 +397,7 @@ jit_stack_trace_get_function(jit_context_t context, jit_stack_trace_t trace, uns
 {
 	if(trace && posn < trace->size)
 	{
-		void *func_info = _jit_memory_find_function_info(context, trace->items[posn]);
+		jit_function_info_t func_info = _jit_memory_find_function_info(context, trace->items[posn]);
 		if(func_info)
 		{
 			return _jit_memory_get_function(context, func_info);
@@ -436,7 +436,7 @@ void *jit_stack_trace_get_pc
 unsigned int
 jit_stack_trace_get_offset(jit_context_t context, jit_stack_trace_t trace, unsigned int posn)
 {
-	void *func_info;
+	jit_function_info_t func_info;
 	jit_function_t func;
 
 	if(!trace || posn >= trace->size)

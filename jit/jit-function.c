@@ -648,7 +648,7 @@ void *jit_function_to_closure(jit_function_t func)
 jit_function_t 
 jit_function_from_closure(jit_context_t context, void *closure)
 {
-	void *func_info;
+	jit_function_info_t func_info;
 
 	if(!context)
 	{
@@ -675,7 +675,7 @@ jit_function_from_closure(jit_context_t context, void *closure)
 jit_function_t
 jit_function_from_pc(jit_context_t context, void *pc, void **handler)
 {
-	void *func_info;
+	jit_function_info_t func_info;
 	jit_function_t func;
 
 	if(!context)
@@ -766,7 +766,7 @@ jit_function_from_vtable_pointer(jit_context_t context, void *vtable_pointer)
 	}
 	return 0;
 #else
-	void *func_info;
+	jit_function_info_t func_info;
 
 	if(!context)
 	{

@@ -1,3 +1,12 @@
+2013-02-28  Alexey Galakhov  <agalakhov@gmail.com>
+
+	* include/jit/jit-memory.h, jit/jit-compile.c, jit/jit-dump.c
+	* jit/jit-except.c, jit/jit-function.c, jit/jit-internal.h
+	* jit/jit-memory.c: Use typed pointers instead of void* to allow
+	for compiler type checking.
+
+	* jit/jit-memory-cache.c: Remove unsafe typecasts.
+
 2013-02-27  Aleksey Demakov  <ademakov@gmail.com>
 
 	* jit/jit-dump.c (jit_dump_function): fix error finding function end

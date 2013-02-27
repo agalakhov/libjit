@@ -66,6 +66,18 @@ struct jit_cache_node
 	jit_function_t		func;		/* Function info block slot */
 };
 
+static inline jit_cache_node_t
+to_cache_node(jit_function_info_t x)
+{
+	return (jit_cache_node_t) x;
+}
+
+static inline jit_function_info_t
+to_function_info(jit_cache_node_t x)
+{
+	return (jit_function_info_t) x;
+}
+
 /*
  * Structure of the page list entry.
  */
@@ -96,6 +108,18 @@ struct jit_cache
 	struct jit_cache_node	nil;		/* Nil pointer for the lookup tree */
 };
 
+static inline jit_cache_t
+to_cache(jit_memory_context_t x)
+{
+	return (jit_cache_t) x;
+}
+
+static inline jit_memory_context_t
+to_memory_context(jit_cache_t x)
+{
+	return (jit_memory_context_t) x;
+}
+
 /*
  * Get or set the sub-trees of a node.
  */
@@ -119,8 +143,8 @@ struct jit_cache
 #define	SetBlack(node)	\
 	((node)->left = (jit_cache_node_t)(((jit_nuint)(node)->left) & ~((jit_nuint)1)))
 
-void _jit_cache_destroy(jit_cache_t cache);
-void * _jit_cache_alloc_data(jit_cache_t cache, unsigned long size, unsigned long align);
+void _jit_cache_destroy(jit_memory_context_t memctx);
+void * _jit_cache_alloc_data(jit_memory_context_t memctx, jit_size_t size, jit_size_t align);
 
 /*
  * Allocate a cache page and add it to the cache.
@@ -363,7 +387,7 @@ AddToLookupTree(jit_cache_t cache, jit_cache_node_t method)
 	SetBlack(cache->head.right);
 }
 
-jit_cache_t
+jit_memory_context_t
 _jit_cache_create(jit_context_t context)
 {
 	jit_cache_t cache;
@@ -437,17 +461,18 @@ _jit_cache_create(jit_context_t context)
 	AllocCachePage(cache, 0);
 	if(!cache->free_start)
 	{
-		_jit_cache_destroy(cache);
+		_jit_cache_destroy(to_memory_context(cache));
 		return 0;
 	}
 
 	/* Ready to go */
-	return cache;
+	return to_memory_context(cache);
 }
 
 void
-_jit_cache_destroy(jit_cache_t cache)
+_jit_cache_destroy(jit_memory_context_t memctx)
 {
+	jit_cache_t cache = to_cache(memctx);
 	unsigned long page;
 
 	/* Free all of the cache pages */
@@ -465,16 +490,17 @@ _jit_cache_destroy(jit_cache_t cache)
 	jit_free(cache);
 }
 
-void
-_jit_cache_extend(jit_cache_t cache, int count)
+int
+_jit_cache_extend(jit_memory_context_t memctx, int count)
 {
+	jit_cache_t cache = to_cache(memctx);
 	/* Compute the page size factor */
 	int factor = 1 << count;
 
 	/* Bail out if there is a started function */
 	if(cache->node)
 	{
-		return;
+		return JIT_MEMORY_ERROR;
 	}
 
 	/* If we had a newly allocated page then it has to be freed
@@ -501,23 +527,25 @@ _jit_cache_extend(jit_cache_t cache, int count)
 
 	/* Allocate a new page now */
 	AllocCachePage(cache, factor);
+	return JIT_MEMORY_OK;
 }
 
 jit_function_t
-_jit_cache_alloc_function(jit_cache_t cache)
+_jit_cache_alloc_function(jit_memory_context_t memctx)
 {
 	return jit_cnew(struct _jit_function);
 }
 
 void
-_jit_cache_free_function(jit_cache_t cache, jit_function_t func)
+_jit_cache_free_function(jit_memory_context_t memctx, jit_function_t func)
 {
 	jit_free(func);
 }
 
 int
-_jit_cache_start_function(jit_cache_t cache, jit_function_t func)
+_jit_cache_start_function(jit_memory_context_t memctx, jit_function_t func)
 {
+	jit_cache_t cache = to_cache(memctx);
 	/* Bail out if there is a started function already */
 	if(cache->node)
 	{
@@ -536,7 +564,8 @@ _jit_cache_start_function(jit_cache_t cache, jit_function_t func)
 
 	/* Allocate a new cache node */
 	cache->node = _jit_cache_alloc_data(
-		cache, sizeof(struct jit_cache_node), sizeof(void *));
+		to_memory_context(cache),
+		sizeof(struct jit_cache_node), sizeof(void *));
 	if(!cache->node)
 	{
 		return JIT_MEMORY_TOO_BIG;
@@ -553,8 +582,9 @@ _jit_cache_start_function(jit_cache_t cache, jit_function_t func)
 }
 
 int
-_jit_cache_end_function(jit_cache_t cache, int result)
+_jit_cache_end_function(jit_memory_context_t memctx, int result)
 {
+	jit_cache_t cache = to_cache(memctx);
 	/* Bail out if there is no started function */
 	if(!cache->node)
 	{
@@ -582,8 +612,9 @@ _jit_cache_end_function(jit_cache_t cache, int result)
 }
 
 void *
-_jit_cache_get_code_break(jit_cache_t cache)
+_jit_cache_get_code_break(jit_memory_context_t memctx)
 {
+	jit_cache_t cache = to_cache(memctx);
 	/* Bail out if there is no started function */
 	if(!cache->node)
 	{
@@ -595,8 +626,9 @@ _jit_cache_get_code_break(jit_cache_t cache)
 }
 
 void
-_jit_cache_set_code_break(jit_cache_t cache, void *ptr)
+_jit_cache_set_code_break(jit_memory_context_t memctx, void *ptr)
 {
+	jit_cache_t cache = to_cache(memctx);
 	/* Bail out if there is no started function */
 	if(!cache->node)
 	{
@@ -617,8 +649,9 @@ _jit_cache_set_code_break(jit_cache_t cache, void *ptr)
 }
 
 void *
-_jit_cache_get_code_limit(jit_cache_t cache)
+_jit_cache_get_code_limit(jit_memory_context_t memctx)
 {
+	jit_cache_t cache = to_cache(memctx);
 	/* Bail out if there is no started function */
 	if(!cache->node)
 	{
@@ -630,8 +663,9 @@ _jit_cache_get_code_limit(jit_cache_t cache)
 }
 
 void *
-_jit_cache_alloc_data(jit_cache_t cache, unsigned long size, unsigned long align)
+_jit_cache_alloc_data(jit_memory_context_t memctx, jit_size_t size, jit_size_t align)
 {
+	jit_cache_t cache = to_cache(memctx);
 	unsigned char *ptr;
 
 	/* Get memory from the top of the free region, so that it does not
@@ -701,29 +735,29 @@ alloc_code(jit_cache_t cache, unsigned int size, unsigned int align)
 }
 
 void *
-_jit_cache_alloc_trampoline(jit_cache_t cache)
+_jit_cache_alloc_trampoline(jit_memory_context_t memctx)
 {
-	return alloc_code(cache,
+	return alloc_code(to_cache(memctx),
 			  jit_get_trampoline_size(),
 			  jit_get_trampoline_alignment());
 }
 
 void
-_jit_cache_free_trampoline(jit_cache_t cache, void *trampoline)
+_jit_cache_free_trampoline(jit_memory_context_t memctx, void *trampoline)
 {
 	/* not supported yet */
 }
 
 void *
-_jit_cache_alloc_closure(jit_cache_t cache)
+_jit_cache_alloc_closure(jit_memory_context_t memctx)
 {
-	return alloc_code(cache,
+	return alloc_code(to_cache(memctx),
 			  jit_get_closure_size(),
 			  jit_get_closure_alignment());
 }
 
 void
-_jit_cache_free_closure(jit_cache_t cache, void *closure)
+_jit_cache_free_closure(jit_memory_context_t memctx, void *closure)
 {
 	/* not supported yet */
 }
@@ -785,9 +819,10 @@ _jit_cache_alloc_no_method(jit_cache_t cache, unsigned long size, unsigned long 
 }
 #endif
 
-void *
-_jit_cache_find_function_info(jit_cache_t cache, void *pc)
+jit_function_info_t
+_jit_cache_find_function_info(jit_memory_context_t memctx, void *pc)
 {
+	jit_cache_t cache = to_cache(memctx);
 	jit_cache_node_t node = cache->head.right;
 	while(node != &(cache->nil))
 	{
@@ -801,41 +836,38 @@ _jit_cache_find_function_info(jit_cache_t cache, void *pc)
 		}
 		else
 		{
-			return node;
+			return to_function_info(node);
 		}
 	}
 	return 0;
 }
 
 jit_function_t
-_jit_cache_get_function(jit_cache_t cache, void *func_info)
+_jit_cache_get_function(jit_memory_context_t memctx, jit_function_info_t func_info)
 {
 	if (func_info)
 	{
-		jit_cache_node_t node = (jit_cache_node_t) func_info;
-		return node->func;
+		return to_cache_node(func_info)->func;
 	}
 	return 0;
 }
 
 void *
-_jit_cache_get_function_start(jit_memory_context_t memctx, void *func_info)
+_jit_cache_get_function_start(jit_memory_context_t memctx, jit_function_info_t func_info)
 {
 	if (func_info)
 	{
-		jit_cache_node_t node = (jit_cache_node_t) func_info;
-		return node->start;
+		return to_cache_node(func_info)->start;
 	}
 	return 0;
 }
 
 void *
-_jit_cache_get_function_end(jit_memory_context_t memctx, void *func_info)
+_jit_cache_get_function_end(jit_memory_context_t memctx, jit_function_info_t func_info)
 {
 	if (func_info)
 	{
-		jit_cache_node_t node = (jit_cache_node_t) func_info;
-		return node->end;
+		return to_cache_node(func_info)->end;
 	}
 	return 0;
 }
@@ -845,61 +877,32 @@ jit_default_memory_manager(void)
 {
 	static const struct jit_memory_manager mm = {
 
-		(jit_memory_context_t (*)(jit_context_t))
 		&_jit_cache_create,
-
-		(void (*)(jit_memory_context_t))
 		&_jit_cache_destroy,
 
-		(void * (*)(jit_memory_context_t, void *))
 		&_jit_cache_find_function_info,
-
-		(jit_function_t (*)(jit_memory_context_t, void *))
 		&_jit_cache_get_function,
-
-		(void * (*)(jit_memory_context_t, void *))
 		&_jit_cache_get_function_start,
-
-		(void * (*)(jit_memory_context_t, void *))
 		&_jit_cache_get_function_end,
 
-		(jit_function_t (*)(jit_memory_context_t))
 		&_jit_cache_alloc_function,
-
-		(void (*)(jit_memory_context_t, jit_function_t))
 		&_jit_cache_free_function,
 
-		(int (*)(jit_memory_context_t, jit_function_t))
 		&_jit_cache_start_function,
-
-		(int (*)(jit_memory_context_t, int))
 		&_jit_cache_end_function,
-
-		(int (*)(jit_memory_context_t, int))
 		&_jit_cache_extend,
 
-		(void * (*)(jit_memory_context_t))
 		&_jit_cache_get_code_limit,
 
-		(void * (*)(jit_memory_context_t))
 		&_jit_cache_get_code_break,
-
-		(void (*)(jit_memory_context_t, void *))
 		&_jit_cache_set_code_break,
 
-		(void * (*)(jit_memory_context_t))
 		&_jit_cache_alloc_trampoline,
-
-		(void (*)(jit_memory_context_t, void *))
 		&_jit_cache_free_trampoline,
 
-		(void * (*)(jit_memory_context_t))
 		&_jit_cache_alloc_closure,
-
-		(void (*)(jit_memory_context_t, void *))
 		&_jit_cache_free_closure,
 
-		(void * (*)(jit_memory_context_t, jit_size_t, jit_size_t))
 		&_jit_cache_alloc_data
 	};
 	return &mm;
