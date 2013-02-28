@@ -989,6 +989,7 @@ void detect_float_return(void)
 		{ \
 			struct_return_in_reg[(n) - 1] = 1; \
 		} \
+		(void) apply_return; \
 	}
 #define	call_struct_test(n)	run_detect_struct_##n()
 declare_struct_test(1);
@@ -2297,7 +2298,7 @@ void dump_apply_macros(void)
 	printf("#define jit_apply_builder_add_struct(builder,value,size,align) \\\n");
 	printf("\tdo { \\\n");
 	printf("\t\tunsigned int __size = (size); \\\n");
-	printf("\t\tunsigned int __align; __align = (align); \\\n");
+	printf("\t\tunsigned int __align; __align = (align); (void) __align;\\\n");
 	printf("\t\tjit_apply_builder_add_large_inner((builder), (value), __size, __align); \\\n");
 	printf("\t} while (0)\n\n");
 

@@ -54,7 +54,7 @@ extern long gensel_linenum;
  * Report error message.
  */
 static void
-gensel_error_message(char *filename, long linenum, char *msg)
+gensel_error_message(const char *filename, long linenum, const char *msg)
 {
 	fprintf(stderr, "%s(%ld): %s\n", filename, linenum, msg);
 }
@@ -63,7 +63,7 @@ gensel_error_message(char *filename, long linenum, char *msg)
  * Report error message and exit.
  */
 static void
-gensel_error(char *filename, long linenum, char *msg)
+gensel_error(const char *filename, long linenum, const char *msg)
 {
 	gensel_error_message(filename, linenum, msg);
 	exit(1);
@@ -73,7 +73,7 @@ gensel_error(char *filename, long linenum, char *msg)
  * Report error messages from the parser.
  */
 static void
-yyerror(char *msg)
+yyerror(const char *msg)
 {
 	gensel_error_message(gensel_filename, gensel_linenum, msg);
 }

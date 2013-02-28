@@ -1,5 +1,11 @@
 2013-02-28  Alexey Galakhov  <agalakhov@gmail.com>
 
+	* tools/gen-apply.c, tools/gen-ops-parser.y, tools/gen-rules-parser.y
+	* jit/jit-elf-read.c: Fix most compiler warnings. The remaining
+	warnings may be related to logical errors and should be revised.
+
+2013-02-28  Alexey Galakhov  <agalakhov@gmail.com>
+
 	* include/jit/jit-memory.h, jit/jit-compile.c, jit/jit-dump.c
 	* jit/jit-except.c, jit/jit-function.c, jit/jit-internal.h
 	* jit/jit-memory.c: Use typed pointers instead of void* to allow
